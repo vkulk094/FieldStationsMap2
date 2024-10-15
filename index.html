@@ -3,7 +3,7 @@
 <head>
     <title>Field Stations Map</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDK8ugR-SpMP3PTvr0_XTPUI8yEd0Az1RU"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY" async defer></script> <!-- Updated for async loading -->
     <style>
         html, body {
             height: 100%;
@@ -95,7 +95,6 @@
                 { name: "Station 12: Seating bench", lat: 45.506977, lng: -75.813716 },
                 { name: "Station 13: Next seating bench", lat: 45.508289, lng: -75.813406 },
                 { name: "Station 14: Lake on Gatineau Parkway", lat: 45.505971, lng: -75.822481 }
-                // More stations here...
             ];
 
             stations.forEach(function(station, index) {
@@ -125,7 +124,12 @@
                 });
             });
 
-            // Create a button container to hold both buttons side by side
+            // Call the createButtons function here, after the map is initialized
+            createButtons();
+        }
+
+        // Function to create custom buttons for the map
+        function createButtons() {
             var buttonContainer = document.createElement("div");
             buttonContainer.classList.add("button-container");
 
@@ -133,13 +137,13 @@
             var locationButton = document.createElement("button");
             locationButton.textContent = "Find My Location";
             locationButton.classList.add("custom-map-control-button");
-            buttonContainer.appendChild(locationButton); // Add it to the button container
+            buttonContainer.appendChild(locationButton);
 
             // Add toggle button for enabling/disabling map center follow
             var followButton = document.createElement("button");
             followButton.textContent = "Enable Follow GPS";
             followButton.classList.add("custom-map-control-button");
-            buttonContainer.appendChild(followButton); // Add it to the button container
+            buttonContainer.appendChild(followButton);
 
             // Add map type toggle button
             var mapTypeButton = document.createElement("button");

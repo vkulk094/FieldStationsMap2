@@ -13,7 +13,6 @@
         #map {
             height: 100%;
             width: 100%;
-            border: 2px solid red; /* Add border to visually check if map div is rendered */
         }
         .custom-map-control-button {
             background-color: #fff;
@@ -31,8 +30,6 @@
         .button-container {
             display: flex;
             justify-content: center;
-            align-items: center;
-            position: relative;
         }
         .watermark {
             position: absolute;
@@ -44,25 +41,9 @@
             font-weight: bold;
             pointer-events: none;
         }
-        .loading-spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            animation: spin 2s linear infinite;
-            position: absolute;
-            top: 50%;
-            left: 110%;
-            transform: translate(-50%, -50%);
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
         .error-message {
             position: absolute;
-            bottom: 50px;
+            bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
             background-color: rgba(255, 0, 0, 0.8);
@@ -77,156 +58,113 @@
 </head>
 <body>
     <div id="map"></div>
+    <!-- Watermark -->
     <div class="watermark">© 2024 by Vaibhav Kulkarni for Dr. Guillet</div>
+    <!-- Error message div -->
     <div id="error-message" class="error-message"></div>
+    
     <script>
-        // Variables to hold map and user location marker, and to manage GPS follow feature
         let map;
         let userMarker;
-        let followGPS = false;
+        let followGPS = false; // Initially not following GPS
+        let isSatelliteView = false; // Map view toggle state
 
-        // Function to initialize the Google Map
         function initMap() {
-            console.log("Initializing map...");
+            // Initialize the map centered around the field stations area
+            var mapCenter = { lat: 45.509827, lng: -75.823902 };
+            map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 14,
+                center: mapCenter,
+                mapTypeId: google.maps.MapTypeId.ROADMAP, // Default to ROADMAP
+                disableDefaultUI: true
+            });
 
-            if (navigator.geolocation) {
-                console.log("Geolocation supported.");
-                
-                // Try to get user's current location
-                navigator.geolocation.getCurrentPosition(
-                    function(position) {
-                        console.log("Geolocation successful:", position);
-                        
-                        // If successful, center the map on user's current location
-                        var userCenter = {
-                            lat: position.coords.latitude,
-                            lng: position.coords.longitude
-                        };
-                        map = new google.maps.Map(document.getElementById('map'), {
-                            zoom: 14,
-                            center: userCenter,
-                            mapTypeId: google.maps.MapTypeId.ROADMAP,
-                            disableDefaultUI: true
-                        });
-                    },
-                    function(error) {
-                        console.error("Geolocation error:", error);
-
-                        // If user denies location permission or there is an error, set a default location
-                        var defaultCenter = { lat: 45.509827, lng: -75.823902 };
-                        map = new google.maps.Map(document.getElementById('map'), {
-                            zoom: 14,
-                            center: defaultCenter,
-                            mapTypeId: google.maps.MapTypeId.ROADMAP,
-                            disableDefaultUI: true
-                        });
-                        // Show error message if location permission is denied
-                        if (error.code === error.PERMISSION_DENIED) {
-                            var errorMessage = document.getElementById('error-message');
-                            errorMessage.textContent = "Location access denied. Please enable location permissions in your browser settings.";
-                            errorMessage.style.display = "block";
-                            setTimeout(() => {
-                                errorMessage.style.display = "none";
-                            }, 5000);
-                        }
-                    }
-                );
-            } else {
-                console.error("Geolocation is not supported by this browser.");
-
-                // If geolocation is not supported, set a default location
-                var defaultCenter = { lat: 45.509827, lng: -75.823902 };
-                map = new google.maps.Map(document.getElementById('map'), {
-                    zoom: 14,
-                    center: defaultCenter,
-                    mapTypeId: google.maps.MapTypeId.ROADMAP,
-                    disableDefaultUI: true
-                });
-            }
-
-            // Add station markers to the map
-            addStationMarkers();
-
-            // Create buttons for user interaction (Find My Location, Follow GPS)
-            createButtons();
-        }
-
-        // Function to add field station markers to the map
-        function addStationMarkers() {
+            // Add field station markers with custom icons
             var stations = [
                 { name: "Station 1: Parking lot", lat: 45.509827, lng: -75.823902 },
                 { name: "Station 2: Bridge", lat: 45.509792, lng: -75.822759 },
-                // Add more stations here...
+                // More stations here...
             ];
 
-            // Add markers for each station to the map
             stations.forEach(function(station, index) {
-                console.log("Adding marker for:", station.name);
+                var markerIcon = {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 10,
+                    fillColor: "#FF0000",  // Custom marker color
+                    fillOpacity: 0.8,
+                    strokeWeight: 2,
+                    strokeColor: "#000000"
+                };
 
                 var marker = new google.maps.Marker({
                     position: { lat: station.lat, lng: station.lng },
                     map: map,
                     title: station.name,
-                    label: (index + 1).toString()
+                    label: (index + 1).toString(),
+                    icon: markerIcon
                 });
 
-                // Add information window for each marker
                 var infowindow = new google.maps.InfoWindow({
-                    content: '<div><strong>' + station.name + '</strong><br>Flora and Fauna to Observe: Example details here</div>'
+                    content: '<div><strong>' + station.name + '</strong></div>'
                 });
 
-                // Open information window when marker is clicked
                 marker.addListener('click', function() {
                     infowindow.open(map, marker);
                 });
             });
-        }
 
-        // Function to create user interaction buttons (Find My Location, Follow GPS)
-        function createButtons() {
+            // Create a button container to hold both buttons side by side
             var buttonContainer = document.createElement("div");
             buttonContainer.classList.add("button-container");
 
-            // Button to find user's current location
+            // Add button to get user's current location
             var locationButton = document.createElement("button");
             locationButton.textContent = "Find My Location";
             locationButton.classList.add("custom-map-control-button");
-            buttonContainer.appendChild(locationButton);
+            buttonContainer.appendChild(locationButton); // Add it to the button container
 
-            // Loading spinner to indicate when location is being fetched
-            var loadingSpinner = document.createElement("div");
-            loadingSpinner.classList.add("loading-spinner");
-            loadingSpinner.style.display = "none";
-            locationButton.appendChild(loadingSpinner); // Attach loading spinner to location button
-
-            // Button to enable/disable GPS follow mode
+            // Add toggle button for enabling/disabling map center follow
             var followButton = document.createElement("button");
             followButton.textContent = "Enable Follow GPS";
             followButton.classList.add("custom-map-control-button");
-            buttonContainer.appendChild(followButton);
+            buttonContainer.appendChild(followButton); // Add it to the button container
 
-            // Add button container to the map controls
+            // Add map type toggle button
+            var mapTypeButton = document.createElement("button");
+            mapTypeButton.textContent = "Satellite View";
+            mapTypeButton.classList.add("custom-map-control-button");
+            buttonContainer.appendChild(mapTypeButton);
+
+            // Add zoom control buttons
+            var zoomInButton = document.createElement("button");
+            zoomInButton.textContent = "+";
+            zoomInButton.classList.add("custom-map-control-button");
+            buttonContainer.appendChild(zoomInButton);
+
+            var zoomOutButton = document.createElement("button");
+            zoomOutButton.textContent = "-";
+            zoomOutButton.classList.add("custom-map-control-button");
+            buttonContainer.appendChild(zoomOutButton);
+
+            // Add the button container to the map
             map.controls[google.maps.ControlPosition.TOP_CENTER].push(buttonContainer);
 
-            // Event listener for location button
+            // Set up watchPosition for continuous GPS updates
             locationButton.addEventListener("click", function() {
-                loadingSpinner.style.display = "block";
                 if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(
+                    navigator.geolocation.watchPosition(
                         function(position) {
-                            loadingSpinner.style.display = "none";
-                            console.log("Finding user location:", position);
-                            
                             var userPos = {
                                 lat: position.coords.latitude,
                                 lng: position.coords.longitude
                             };
 
-                            // Update or add user marker on the map
+                            // If a user marker exists, remove it before adding a new one
                             if (userMarker) {
                                 userMarker.setMap(null);
                             }
 
+                            // Add the new marker for the updated location
                             userMarker = new google.maps.Marker({
                                 position: userPos,
                                 map: map,
@@ -241,49 +179,56 @@
                                 }
                             });
 
-                            // Center map on user's position if follow GPS is enabled
+                            // If followGPS is enabled, center the map
                             if (followGPS) {
                                 map.setCenter(userPos);
                             }
                         },
-                        function(error) {
-                            console.error("Geolocation error:", error);
-                            loadingSpinner.style.display = "none";
-                            var errorMessage = document.getElementById('error-message');
-                            if (error.code === error.PERMISSION_DENIED) {
-                                errorMessage.textContent = "Location access denied. Please enable location permissions in your browser settings.";
-                            } else {
-                                errorMessage.textContent = "Geolocation failed or is not available.";
-                            }
-                            errorMessage.style.display = "block";
-                            setTimeout(() => {
-                                errorMessage.style.display = "none";
-                            }, 5000);
+                        function() {
+                            showError("Geolocation failed or is not available.");
                         },
                         { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
                     );
                 } else {
-                    console.error("Geolocation not supported.");
-                    loadingSpinner.style.display = "none";
-                    var errorMessage = document.getElementById('error-message');
-                    errorMessage.textContent = "Geolocation is not supported by this browser.";
-                    errorMessage.style.display = "block";
-                    setTimeout(() => {
-                        errorMessage.style.display = "none";
-                    }, 5000);
+                    showError("Geolocation is not supported by this browser.");
                 }
             });
 
-            // Event listener for follow GPS button
+            // Toggle button for enabling/disabling GPS follow
             followButton.addEventListener("click", function() {
-                followGPS = !followGPS;
-                followButton.textContent = followGPS ? "Disable Follow GPS" : "Enable Follow GPS";
-                followButton.style.backgroundColor = followGPS ? "#4CAF50" : "#fff";
-                followButton.style.color = followGPS ? "white" : "black";
+                followGPS = !followGPS; // Toggle the followGPS state
+                followButton.textContent = followGPS ? "Disable Follow GPS" : "Enable Follow GPS"; // Update button text
+                followButton.style.backgroundColor = followGPS ? "#4CAF50" : "#fff"; // Change button color
+                followButton.style.color = followGPS ? "white" : "black"; // Change text color
+            });
+
+            // Map type toggle button
+            mapTypeButton.addEventListener("click", function() {
+                isSatelliteView = !isSatelliteView;
+                map.setMapTypeId(isSatelliteView ? google.maps.MapTypeId.SATELLITE : google.maps.MapTypeId.ROADMAP);
+                mapTypeButton.textContent = isSatelliteView ? "Roadmap View" : "Satellite View";
+            });
+
+            // Zoom controls
+            zoomInButton.addEventListener("click", function() {
+                map.setZoom(map.getZoom() + 1); // Zoom in
+            });
+            zoomOutButton.addEventListener("click", function() {
+                map.setZoom(map.getZoom() - 1); // Zoom out
             });
         }
 
-        // Initialize map when window loads
+        // Function to display error messages gracefully
+        function showError(message) {
+            var errorMessage = document.getElementById('error-message');
+            errorMessage.textContent = message;
+            errorMessage.style.display = "block";
+            setTimeout(() => {
+                errorMessage.style.display = "none";
+            }, 5000); // Remove error message after 5 seconds
+        }
+
+        // Load the map when the window loads
         window.onload = initMap;
     </script>
 </body>
